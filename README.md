@@ -14,7 +14,7 @@ This package is released under an [MIT license](https://github.com/marinarasauce
 Authors: [Marina Nelson](https://github.com/marinarasauced) <br/>
 Maintainer: Marina Nelson, marinarasauced@outlook.com
 
-Parts of this package (code review, documentation) were developed with the assistance of Claude Sonnet 5.5, an AI model by Anthropic.
+Parts of this package were rewritten with the assistance of Claude Sonnet 5.5, an AI model by Anthropic.
 All AI contributions were reviewed, tested, and applied by the author.
 
 ## Contents
