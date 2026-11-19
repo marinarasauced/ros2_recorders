@@ -1,147 +1,125 @@
-# ros2_logger_csv
+# recorders
 
-ROS 2 package for logging messages directly to `.csv` files; not recommended for binary message types with large arrays (i.e., images, point clouds) or significant volumes of data as these may result in poor performance.
+![Ubuntu](https://img.shields.io/badge/Ubuntu-26.04-E95420?logo=ubuntu&logoColor=white)
+![ROS 2](https://img.shields.io/badge/ROS_2-Lyrical-22314E?logo=ros&logoColor=white)
+![C++](https://img.shields.io/badge/C++-20-00599C?logo=cplusplus&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
-> [!WARNING]
-> Use of this package is not advised for users who are familiar with ROS 2; please use ros2bag instead.
-
-## Overview
-
-This package contains a general purpose data logger for ROS 2, designed to be accessible to users with limited experience in robotics software who may prefer human-readable data over ROS-specific serialization (i.e., rosbag2).
-
-> [!WARNING]
-> This package is not intended for high-bandwidth binary data (i.e., images, point clouds) as these message types may cause poor performance. Nodes in this package are written in Python for ease of use and to enable dynamic topic subscription without the use of msg introspection, while backend tasks (i.e., msg parsing, log file i/o) utilize C++ functions via `pybind11` bindings.
+ROS 2 package that records topics directly to `.csv` files ; one node reads the message layout at run time, so any message type works without per-type code. Not recommended for large arrays (images, point clouds) or high data rates ; use [rosbag2](https://github.com/ros2/rosbag2) instead.
 
 ## License
 
-This package is released under an [MIT License](https://github.com/marinarasauced/ros2_logger_csv/blob/main/LICENSE).
+This package is released under an [MIT license](https://github.com/marinarasauced/ros2_logger_csv/blob/main/LICENSE).
 
 Authors: [Marina Nelson](https://github.com/marinarasauced) <br/>
-Contributors: [Vik095](https://github.com/Vik095) ([ros msg parser in py](https://github.com/Vik095/Ros_msgs_parser)) <br/>
-Affiliation: [ACE Lab](https://rvcowlagi-research.owlstown.net/)* <br/>
 Maintainer: Marina Nelson, marinarasauced@outlook.com
 
-**The original version of the package was developed for the ACE Lab at WPI. This current version is streamlined to improve code legibility and improve performance.*
+Parts of this package (code review, documentation) were developed with the assistance of Claude Sonnet 5.5, an AI model by Anthropic.
+All AI contributions were reviewed, tested, and applied by the author.
+
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Parameters](#parameters)
+- [Log files](#log-files)
+
+## Requirements
+
+| Component | Version tested |
+|---|---|
+| Ubuntu | 26.04 |
+| ROS 2 | Lyrical |
+| C++ | 20 |
+
+The ROS dependencies are installed with rosdep.
 
 ## Installation
 
-### Prerequisites
-- Ubuntu 24.04
-- ROS 2 Jazzy
-- ROS 2 Workspace
-
-The following assumes that you have already completed the above prerequisites.
-
-### Steps
-
-Clone the repository into the `src` directory of your ROS 2 workspace:
+Clone the package into your workspace.
 
 ```zsh
-cd ~/your_ws/src
+cd ~/ros2_ws/src
 git clone https://github.com/marinarasauced/ros2_logger_csv
 ```
 
-Update ROS 2 dependencies and compile the package:
+Install all ROS dependencies.
 
 ```zsh
-cd ~/your_ws
+cd ~/ros2_ws
 rosdep install --from-paths src --ignore-src -r -y
-colcon build --packages-select ros2_logger_csv
 ```
 
-Source the setup script:
+Build the package.
 
 ```zsh
-source ~/your_wsinstall/setup.zsh
+colcon build --packages-select recorders
+source install/setup.zsh
 ```
 
 ## Usage
 
-### Nodes
-
-The `ros2_logger_csv` currently includes Python nodes that dynamically subscribe to ROS 2 topics and logs the corresponding messages to `.csv` files. A single executable starts nodes of two types: an initializer and logger instances. The initializer node is responsible for declaring parameters for the executable and ensuring that the write path for the logs exists. The logger node instances are responsible for logging their respective topics to the `.csv` files at the write path.
-
-To start the nodes, execute the following command in a terminal:
+Record two topics to `~/logs`.
 
 ```zsh
-ros2 run ros2_logger_csv main.py
+ros2 run recorders recorder --ros-args -p directory:=~/logs -p 'topics:=[topic1, /ns/topic2]'
 ```
 
-Nodes follow a standard naming pattern. For a logger node instance for a topic `'/ns/topic123'`, the name of the node is `'ros2_logger_csv_ns_topic123'`. Logger node instances are spawned after the `'ros2_logger_csv_initializer'` node, which is destroyed after all logger node instances have started.
-
-### Launch Files
-
-Three default launch options are available. All launch.py files include the following launch arguments: `namespace`, `log_dir_path`, `topic_names`, and `period`. All launch.py files contain logic in the `launch_setup` function to account for different cases where topics and namespaces are entered differently; i.e., `namespace='mess2'` with `topic_names='/topic1, /namespace2/topic2, topic3, namespace3/topic4'`.
-
-The first launch option `logger.launch.py` is considered the default launch.py file and utilizes the default launch arguments.
+Relative topic names use the namespace of the node.
 
 ```zsh
-ros2 launch ros2_logger_csv logger.launch.py namespace:='mess2' log_dir_path:='~/mess2/logs' topic_names:='topic1, topic2' period:=5.0
+ros2 run recorders recorder --ros-args -r __ns:=/robot1 -p directory:=~/logs -p 'topics:=[topic1, topic2]'
 ```
 
-The second launch option `experiment.launch.py` auto generates a subdirectory in `log_dir_path` of the form `XXXX_YYYY-MM-DD_HH:MM:SS` where `XXXX` is the trial number (i.e., 0001, 0002, etc.) and the remainder is descriptive of the time of the start of the trial.
+Start with the launch file and the parameter file.
+Copy `config/recorder.yaml`, edit it, and pass it as `config`.
 
 ```zsh
-ros2 launch ros2_logger_csv experiment.launch.py namespace:='mess2' log_dir_path:='~/mess2/logs' topic_names:='topic1, topic2' period:=5.0
+ros2 launch recorders recorder.launch.py config:=/path/to/your/recorder.yaml
 ```
 
-The third launch option `experiments.launch.py` adds a launch argument `trial_dir` such that the log_dir_path parameter is the joined path of the `log_dir_path` and `trial_dir` launch arguments.
+The launch file also accepts `namespace`, `directory`, `topics` and `trial`.
+A value that is not empty replaces the same value from the parameter file.
 
 ```zsh
-ros2 launch ros2_logger_csv experiments.launch.py namespace:='mess2' log_dir_path:='~/mess2/logs' trial_dir:='0000' topic_names:='topic1, topic2' period:=5.0
+ros2 launch recorders recorder.launch.py namespace:=robot1 directory:=~/logs topics:='topic1, topic2' trial:=auto
 ```
 
-### Log Files
+The node waits for topics that are not advertised yet, and stops waiting after `discovery_timeout`.
+It matches the QoS of the publishers: best effort if any publisher uses it, transient local if all publishers do.
+If a publisher with a stricter QoS appears later, the node subscribes again.
 
-Log files follow a standard format. The ROS 2 message parser function returns a list of complete fields for a given message type. These fields are the first row, and all subsequent rows are the corresponding values of each field. An example for a topic `/test_topic` with type `std_msgs/msg/Header` is shown below assuming the messages published via `ros2 topic pub /test_topic std_msgs/msg/Header`:
+## Parameters
 
-test_topic.csv
-| msg.stamp.sec | msg.stamp.nanosec | msg.frame_id |
-| --- | --- | --- |
-| 0 | 0 |  |
-| 0 | 0 |  |
-| 0 | 0 |  |
+All parameters are read when the node starts, and cannot be changed while it runs.
 
-## pybind11 Interface
+| Parameter | Default | Contents |
+|---|---|---|
+| `directory` | required | directory for the log files, `~` is expanded |
+| `topics` | required | topics to record, relative names use the node namespace |
+| `trial` | `""` | sub-directory: empty for none, `auto` for the next `NNNN_YYYY-MM-DD_HH-MM-SS`, other for a fixed name |
+| `discovery_period` | `5.0` | seconds between checks for topics that are not advertised yet |
+| `discovery_timeout` | `60.0` | seconds to wait for topics before giving up, `0` waits forever |
+| `flush_interval` | `1.0` | seconds between file flushes |
+| `queue_depth` | `10` | subscription queue depth |
+| `overwrite` | `false` | replace existing files, otherwise an existing file is an error |
 
-The `ros2_logger_csv` package integrates C++ backend using `pybind11`. The following are examples of how to use the exposed functions and classes.
+## Log files
 
-### `parse_msg(prefix, msg_type)`
+Each topic has one file named after the topic: `/ns/topic` is written to `ns__topic.csv`.
+The first row holds the column names, and each message adds one row.
+The first column, `received_time_ns`, is the time the message was received in nanoseconds since the epoch.
+The other columns hold the fields of the message, with names that start with `msg.`.
 
-- **Description:** Parses a ROS 2 message type and converts it list of all complete fields.
-- **Arguments:** 
-    - prefix: str = the name of the variable being evaluated in the subscription callback.
-    - msg_type: str = the type of the message in the form `pkg_name/msg/Type`.
-- **Returns:**
-    - list[str] = All complete fields of the message type.
+Example for the topic `/test_topic` of type `std_msgs/msg/Header`:
 
-Example:
-
-```py
-from ros2_logger_csv.msg_parser import parse_msg
-parsed_msg: list[str] = parse_msg(prefix="msg", msg_type="std_msgs/msg/Header")
+```
+received_time_ns,msg.stamp.sec,msg.stamp.nanosec,msg.frame_id
+1795084149650808678,0,0,
+1795084149851017122,0,0,
 ```
 
-### `Logger(log_file_path: str, overwrite: bool = True)`
-
-- **Description:** Handles logging to `.csv` file for logger node instance, including opening file, clearing file, appending rows to file, and closing file.
-- **Arguments:** 
-    - log_file_path: str = the absolute path to the log file
-    - overwrite: bool = decides whether to overwrite preexisting data if a log file already exists at `log_file_path`
-
-#### `log(data: list[str])`
-
-- **Description:** Logs a row of data to the open `.csv` file.
-- **Arguments:** 
-    - data: list[str] = the data formatted in the subscription callback function using the parsed message.
-- **Methods:**
-
-Example:
-
-```py
-from ros2_logger_csv.msg_logger import Logger
-logger: Logger = Logger(log_file_path="/home/marinarasauced/mess2/logs/0000/test_topic.csv", overwrite=True)
-
-logger.log(["msg.stamp.sec", "msg.stamp.nanosec", "msg.frame_id"])
-logger.log(["0", "0", ""])
-```
+- Values are separated by commas. A value that contains a comma, a quote or a new line is quoted.
+- An array is one value: `"[1, 2, 3]"`. A message inside an array is written as `{a, b}`.
+- Booleans are `true` or `false`.
