@@ -1,0 +1,35 @@
+# Template for the csv_recorder node. Copy it and edit the values.
+# "/**" matches any namespace and any node name, so the file works with a namespace too.
+# All parameters are read only: they are read once, when the node starts.
+/**:
+  ros__parameters:
+
+    # Required. Directory for the CSV files. A leading ~ is expanded.
+    directory: ~/ros2_logs
+
+    # Required. Topics to record. Relative names use the node namespace.
+    topics: [
+      "topic1",
+      "/absolute/topic2",
+    ]
+
+    # Sub-directory of "directory".
+    #   ""     : none
+    #   "auto" : next numbered directory, for example 0003_2026-11-19_11-29-04
+    #   other  : used as the directory name
+    trial: ""
+
+    # Seconds between checks for topics that are not advertised yet. Range: 0.01 to 3600.
+    discovery_period: 5.0
+
+    # Seconds to wait for topics before giving up. 0 waits forever. Range: 0 to 86400.
+    discovery_timeout: 60.0
+
+    # Seconds between file flushes. Range: 0.01 to 3600.
+    flush_interval: 1.0
+
+    # Subscription queue depth. Range: 1 to 100000.
+    queue_depth: 10
+
+    # false : an existing CSV file is an error. true : replace it.
+    overwrite: false

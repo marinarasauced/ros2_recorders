@@ -38,7 +38,7 @@ namespace recorders {
 
         void append_utf8(
             std::string& out,
-            std::char32_t c
+            char32_t c
         )
         {
             if (c < 0x80) {
@@ -64,7 +64,7 @@ namespace recorders {
         )
         {
             for (std::size_t i = 0; i < s.size(); ++i) {
-                std::char32_t c = s[i];
+                char32_t c = s[i];
                 if (c >= 0xD800 && c < 0xDC00 && i + 1 < s.size() && s[i + 1] >= 0xDC00 && s[i + 1] < 0xE000) {
                     c = 0x10000 + ((c - 0xD800) << 10) + (s[i + 1] - 0xDC00);
                     ++i;
@@ -88,7 +88,7 @@ namespace recorders {
                 case rosidl_typesupport_introspection_cpp::ROS_TYPE_OCTET:
                 case rosidl_typesupport_introspection_cpp::ROS_TYPE_UINT8: { append_number<int>(out, *static_cast<const std::uint8_t *>(p)); break; }
                 case rosidl_typesupport_introspection_cpp::ROS_TYPE_INT8: { append_number<int>(out, *static_cast<const std::int8_t *>(p)); break; }
-                case rosidl_typesupport_introspection_cpp::ROS_TYPE_WCHAR: { append_number<int>(out, *static_cast<const std::char16_t *>(p)); break; }
+                case rosidl_typesupport_introspection_cpp::ROS_TYPE_WCHAR: { append_number<int>(out, *static_cast<const char16_t *>(p)); break; }
                 case rosidl_typesupport_introspection_cpp::ROS_TYPE_BOOLEAN: { out += *static_cast<const bool *>(p) ? "true" : "false"; break; }
                 case rosidl_typesupport_introspection_cpp::ROS_TYPE_UINT16: { append_number(out, *static_cast<const std::uint16_t *>(p)); break; }
                 case rosidl_typesupport_introspection_cpp::ROS_TYPE_INT16: { append_number(out, *static_cast<const std::int16_t *>(p)); break; }
@@ -110,7 +110,7 @@ namespace recorders {
 
         void append_message(
             std::string& out,
-            const rosidl_typesupport_introspection_cpp::MessageMember* mm,
+            const rosidl_typesupport_introspection_cpp::MessageMembers* mm,
             const void* msg
         )
         {
@@ -131,13 +131,13 @@ namespace recorders {
             const void* field
         )
         {
-            const auto* sub = m.type_id_ == rosidl_typesupport_introspection_cpp::ROS_TYPE_MESSAGE > static_cast<const rosidl_typesupport_introspection_cpp::MessageMembers *>(m.members_->data) : nullptr;
+            const auto* sub = m.type_id_ == rosidl_typesupport_introspection_cpp::ROS_TYPE_MESSAGE ? static_cast<const rosidl_typesupport_introspection_cpp::MessageMembers *>(m.members_->data) : nullptr;
 
             if (!m.is_array_) {
                 if (sub) {
                     append_message(out, sub, field);
                 } else {
-                    append_scalar(out, m.type_id_, field);
+                    impl::append_scalar(out, m.type_id_, field);
                 }
                 return;
             }
@@ -191,7 +191,7 @@ namespace recorders {
         serialization_lib_ = rclcpp::get_typesupport_library(type, "rosidl_typesupport_cpp");
         serialization_type_support_ = rclcpp::get_message_typesupport_handle(type, "rosidl_typesupport_cpp", *serialization_lib_);
 
-        introspection_lib_ = rclcpp::get_typesupport_library(type, intro::typesupport_identifier);
+        introspection_lib_ = rclcpp::get_typesupport_library(type, rosidl_typesupport_introspection_cpp::typesupport_identifier);
         const auto* rosidl_typesupport_introspection_cpp_type_support = rclcpp::get_message_typesupport_handle(type, rosidl_typesupport_introspection_cpp::typesupport_identifier, *introspection_lib_);
         members_ = static_cast<const rosidl_typesupport_introspection_cpp::MessageMembers *>(rosidl_typesupport_introspection_cpp_type_support->data);
 
@@ -208,7 +208,7 @@ namespace recorders {
     csv::Formatter::~Formatter(
     )
     {
-        if (members_) { members_->fini_function(stoarge_.data()); }
+        if (members_) { members_->fini_function(storage_.data()); }
     }
 
 
@@ -222,11 +222,11 @@ namespace recorders {
             const auto & m = members->members_[i];
             const std::string name = prefix + m.name_;
             if (name.ends_with("structure_needs_at_least_one_member")) { continue; }
-            if (m.type_id_ == intro::ROS_TYPE_MESSAGE && !m.is_array_) {
-                flatten(static_cast<const intro::MessageMembers *>(m.members_->data), base + m.offset_, name + ".");
+            if (m.type_id_ == rosidl_typesupport_introspection_cpp::ROS_TYPE_MESSAGE && !m.is_array_) {
+                flatten(static_cast<const rosidl_typesupport_introspection_cpp::MessageMembers *>(m.members_->data), base + m.offset_, name + ".");
             } else {
                 msgs_.push_back({base + m.offset_, &m});
-                append_cell(header_, name);
+                impl::append_cell(header_, name);
                 header_ += ',';
             }
         }
@@ -239,7 +239,7 @@ namespace recorders {
     )
     {
         const rmw_ret_t ret = rmw_deserialize(
-        &msg.get_rcl_serialized_message(), serialization_ts_, storage_.data());
+        &msg.get_rcl_serialized_message(), serialization_type_support_, storage_.data());
         if (ret != RMW_RET_OK) { throw std::runtime_error("rmw_deserialize failed"); }
 
         const auto* base = reinterpret_cast<const std::uint8_t *>(storage_.data());
@@ -252,11 +252,11 @@ namespace recorders {
             const bool plain_number = !m.is_array_ && m.type_id_ != rosidl_typesupport_introspection_cpp::ROS_TYPE_STRING &&
             m.type_id_ != rosidl_typesupport_introspection_cpp::ROS_TYPE_WSTRING;
             if (plain_number) {
-                append_scalar(out, m.type_id_, field);
+                impl::append_scalar(out, m.type_id_, field);
             } else {
                 scratch_.clear();
-                append_value(scratch_, m, field);
-                append_cell(out, scratch_);
+                impl::append_value(scratch_, m, field);
+                impl::append_cell(out, scratch_);
             }
         }
         out += '\n';

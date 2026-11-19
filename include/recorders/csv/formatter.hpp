@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <Vector>
+#include <vector>
 
 #include "rcpputils/shared_library.hpp"
 #include "rclcpp/serialized_message.hpp"
