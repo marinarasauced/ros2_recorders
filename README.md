@@ -87,7 +87,7 @@ ros2 launch recorders recorder.launch.py namespace:=robot1 directory:=~/logs top
 ```
 
 The node waits for topics that are not advertised yet, and stops waiting after `discovery_timeout`.
-It matches the QoS of the publishers: best effort if any publisher uses it, transient local if all publishers do.
+It matches the QoS of the publishers : best effort if any publisher uses it, transient local if all publishers do.
 If a publisher with a stricter QoS appears later, the node subscribes again.
 
 ## Parameters
@@ -97,8 +97,8 @@ All parameters are read when the node starts, and cannot be changed while it run
 | Parameter | Default | Contents |
 |---|---|---|
 | `directory` | required | directory for the log files, `~` is expanded |
+| `trial` | `""` | sub-directory for the log files : empty for none, `auto` for the next `NNNN_YYYY-MM-DD_HH-MM-SS`, other for a fixed name |
 | `topics` | required | topics to record, relative names use the node namespace |
-| `trial` | `""` | sub-directory: empty for none, `auto` for the next `NNNN_YYYY-MM-DD_HH-MM-SS`, other for a fixed name |
 | `discovery_period` | `5.0` | seconds between checks for topics that are not advertised yet |
 | `discovery_timeout` | `60.0` | seconds to wait for topics before giving up, `0` waits forever |
 | `flush_interval` | `1.0` | seconds between file flushes |
@@ -107,7 +107,7 @@ All parameters are read when the node starts, and cannot be changed while it run
 
 ## Log files
 
-Each topic has one file named after the topic: `/ns/topic` is written to `ns__topic.csv`.
+Each topic has one file named after the topic : `/ns/topic` is written to `ns__topic.csv`.
 The first row holds the column names, and each message adds one row.
 The first column, `received_time_ns`, is the time the message was received in nanoseconds since the epoch.
 The other columns hold the fields of the message, with names that start with `msg.`.
