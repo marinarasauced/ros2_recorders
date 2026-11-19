@@ -1,20 +1,23 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>ros2_logger_csv</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="marinarasauced@outlook.com">marinarasauced</maintainer>
-  <license>MIT License</license>
+    <name>recorders</name>
+    <version>0.0.0</version>
+    <description>Generic recorders for logging topics directly to .csv files.</description>
+    <maintainer email="marinarasauced@outlook.com">marinarasauced</maintainer>
+    <license>MIT License</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
-  <depend>ament_index_cpp</depend>
-  <depend>pybind11_vendor</depend>
-  <depend>rclcpp</depend>
-  <depend>rclpy</depend>
+    <buildtool_depend>ament_cmake</buildtool_depend>
+    <depend>rclcpp</depend>
+    <depend>rcpputils</depend>
+    <depend>rmw</depend>
+    <depend>rosidl_runtime_cpp</depend>
+    <depend>rosidl_typesupport_introspection_cpp</depend>
 
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
+    <exec_depend>launch</exec_depend>
+    <exec_depend>launch_ros</exec_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
 </package>
